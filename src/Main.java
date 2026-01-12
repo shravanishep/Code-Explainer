@@ -8,18 +8,40 @@ public class Main {
         String code = """
             public class Test {
                 public static void main(String[] args) {
-                    for(int i = 0; i < 5; i++) {
-                        System.out.println(i);
-                    }
+                    while (true) {
+    for (int i = 0; i < n; i++) {
+        do {
+            x++;
+        } while (x < n);
+    }
+}
+
                 }
             }
         """;
 
         try {
             CompilationUnit cu = StaticJavaParser.parse(code);
-            System.out.println("Java code parsed successfully.");
+
+            ForLoopCounter counter = new ForLoopCounter();
+            counter.visit(cu, null);
+
+            int depth = counter.maxDepth;
+
+            String timeComplexity;
+            if (depth == 0) {
+                timeComplexity = "O(1)";
+            } else if (depth == 1) {
+                timeComplexity = "O(n)";
+            } else {
+                timeComplexity = "O(n^" + depth + ")";
+            }
+
+            System.out.println("Max for-loop nesting depth: " + depth);
+            System.out.println("Estimated Time Complexity: " + timeComplexity);
+
         } catch (Exception e) {
-            System.out.println("Invalid Java code.");
+            System.out.println("Invalid Java code");
         }
     }
 }
