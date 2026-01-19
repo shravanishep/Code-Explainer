@@ -52,6 +52,27 @@ if (counter.recursiveMethods.isEmpty()) {
 
 System.out.println("Estimated Space Complexity: " + spaceComplexity);
 
+if (depth == 0) {
+    System.out.println("Time Complexity Reason: No loops detected, constant time execution.");
+} else if (depth == 1) {
+    System.out.println("Time Complexity Reason: Single loop detected, linear growth with input size.");
+} else {
+    System.out.println(
+        "Time Complexity Reason: " + depth +
+        " nested loops detected. Each inner loop executes fully for every iteration of the outer loop."
+    );
+}
+
+
+if (counter.recursiveMethods.isEmpty()) {
+    System.out.println("Space Complexity Reason: No recursion detected, constant stack space used.");
+} else {
+    System.out.println(
+        "Space Complexity Reason: Recursive method(s) detected " +
+        counter.recursiveMethods +
+        ". Each recursive call adds a stack frame."
+    );
+}
 
 
         } catch (Exception e) {
