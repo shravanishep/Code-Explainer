@@ -90,6 +90,7 @@ public class CodeAnalyzerServer {
                 json.append("\"timeComplexity\": \"").append(estimateTime(r)).append("\",");
                 json.append("\"spaceComplexity\": \"").append(r.isRecursive ? "O(n)" : "O(1)").append("\",");
                 json.append("\"isRecursive\": ").append(r.isRecursive).append(",");
+                json.append("\"nestedDepth\": ").append(r.maxNestedLoopDepth).append(",");
                 json.append("\"loops\": \"").append(r.loops.toString()).append("\"");
                 json.append("}");
             }
@@ -106,11 +107,20 @@ public class CodeAnalyzerServer {
         if (r.loops.isEmpty() && !r.isRecursive) return "O(1)";
         if (r.loops.isEmpty()) return "O(n)";
 
+        // Only multiply loops up to the max nesting depth
         StringBuilder sb = new StringBuilder("O(");
         boolean first = true;
-
+        
+        int nestedCount = 0;
         for (LoopGrowth g : r.loops) {
-            if (!first) sb.append(" * ");
+            nestedCount++;
+            if (nestedCount > r.maxNestedLoopDepth) {
+                // Sequential loop - add instead of multiply
+                sb.append(" + ");
+            } else if (!first) {
+                // Nested loop - multiply
+                sb.append(" * ");
+            }
             first = false;
 
             switch (g) {

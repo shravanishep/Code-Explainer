@@ -12,6 +12,7 @@ enum LoopGrowth {
 class MethodReport {
     String name;
     List<LoopGrowth> loops = new ArrayList<>();
+    int maxNestedLoopDepth = 0;
     boolean isRecursive = false;
     Set<String> callsTo = new HashSet<>();
 }
@@ -20,6 +21,7 @@ public class ComplexityVisitor extends VoidVisitorAdapter<Void> {
 
     private String currentMethod = null;
     private final Map<String, MethodReport> reports = new HashMap<>();
+    private int currentLoopDepth = 0;
 
     public Collection<MethodReport> getReports() {
         detectMutualRecursion();
@@ -56,6 +58,7 @@ public class ComplexityVisitor extends VoidVisitorAdapter<Void> {
     @Override
     public void visit(MethodDeclaration n, Void arg) {
         currentMethod = n.getNameAsString();
+        currentLoopDepth = 0;
         reports.putIfAbsent(currentMethod, new MethodReport());
         reports.get(currentMethod).name = currentMethod;
 
@@ -78,27 +81,42 @@ public class ComplexityVisitor extends VoidVisitorAdapter<Void> {
 
     @Override
     public void visit(ForStmt n, Void arg) {
-        reports.get(currentMethod).loops.add(detectForLoopGrowth(n));
+        currentLoopDepth++;
+        MethodReport report = reports.get(currentMethod);
+        report.loops.add(detectForLoopGrowth(n));
+        report.maxNestedLoopDepth = Math.max(report.maxNestedLoopDepth, currentLoopDepth);
         super.visit(n, arg);
+        currentLoopDepth--;
     }
 
     @Override
     public void visit(ForEachStmt n, Void arg) {
-        // For-each loops are always linear in the size of the collection
-        reports.get(currentMethod).loops.add(LoopGrowth.LINEAR);
+        currentLoopDepth++;
+        MethodReport report = reports.get(currentMethod);
+        report.loops.add(LoopGrowth.LINEAR);
+        report.maxNestedLoopDepth = Math.max(report.maxNestedLoopDepth, currentLoopDepth);
         super.visit(n, arg);
+        currentLoopDepth--;
     }
 
     @Override
     public void visit(WhileStmt n, Void arg) {
-        reports.get(currentMethod).loops.add(detectWhileLoopGrowth(n));
+        currentLoopDepth++;
+        MethodReport report = reports.get(currentMethod);
+        report.loops.add(detectWhileLoopGrowth(n));
+        report.maxNestedLoopDepth = Math.max(report.maxNestedLoopDepth, currentLoopDepth);
         super.visit(n, arg);
+        currentLoopDepth--;
     }
 
     @Override
     public void visit(DoStmt n, Void arg) {
-        reports.get(currentMethod).loops.add(detectDoWhileGrowth(n));
+        currentLoopDepth++;
+        MethodReport report = reports.get(currentMethod);
+        report.loops.add(detectDoWhileGrowth(n));
+        report.maxNestedLoopDepth = Math.max(report.maxNestedLoopDepth, currentLoopDepth);
         super.visit(n, arg);
+        currentLoopDepth--;
     }
 
     private LoopGrowth detectForLoopGrowth(ForStmt n) {

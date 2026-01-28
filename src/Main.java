@@ -60,6 +60,7 @@ public class Main {
         }
 
         if (!r.loops.isEmpty()) {
+            System.out.println("Loop Nesting Depth: " + r.maxNestedLoopDepth);
             System.out.println("Loop Growth Types: " + r.loops);
         }
 
@@ -70,11 +71,20 @@ public class Main {
         if (r.loops.isEmpty() && !r.isRecursive) return "O(1)";
         if (r.loops.isEmpty()) return "O(n)";
 
+        // Only multiply loops up to the max nesting depth
         StringBuilder sb = new StringBuilder("O(");
         boolean first = true;
-
+        
+        int nestedCount = 0;
         for (LoopGrowth g : r.loops) {
-            if (!first) sb.append(" * ");
+            nestedCount++;
+            if (nestedCount > r.maxNestedLoopDepth) {
+                // Sequential loop - add instead of multiply
+                sb.append(" + ");
+            } else if (!first) {
+                // Nested loop - multiply
+                sb.append(" * ");
+            }
             first = false;
 
             switch (g) {
