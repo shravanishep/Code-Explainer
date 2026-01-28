@@ -8,16 +8,22 @@ public class Main {
         String code = """
             public class Test {
 
-                    static int fact(int n) {
-            if (n == 0) return 1;
-            return n * fact(n - 1);
-        }
+                static int fact(int n) {
+                    if (n == 0) return 1;
+                    return n * fact(n - 1);
+                }
+
+                static void demo(int n) {
+                    for(int i=0;i<n;i++) {
+                        for(int j=1;j<n;j*=2) {
+                            System.out.println(i + j);
+                        }
+                    }
+                }
+
                 public static void main(String[] args) {
-               
-
-         System.out.println(fact(5));
-
-
+                    System.out.println(fact(5));
+                    demo(10);
                 }
             }
         """;
@@ -25,58 +31,70 @@ public class Main {
         try {
             CompilationUnit cu = StaticJavaParser.parse(code);
 
-            ForLoopCounter counter = new ForLoopCounter();
-            counter.visit(cu, null);
+            ComplexityVisitor visitor = new ComplexityVisitor();
+            visitor.visit(cu, null);
 
-            int depth = counter.maxDepth;
-
-            String timeComplexity;
-            if (depth == 0) {
-                timeComplexity = "O(1)";
-            } else if (depth == 1) {
-                timeComplexity = "O(n)";
-            } else {
-                timeComplexity = "O(n^" + depth + ")";
+            for (MethodReport r : visitor.getReports()) {
+                printReport(r);
             }
 
-            System.out.println("Max for-loop nesting depth: " + depth);
-            System.out.println("Estimated Time Complexity: " + timeComplexity);
-            System.out.println("Recursive methods: " + counter.recursiveMethods);
-            String spaceComplexity;
-
-if (counter.recursiveMethods.isEmpty()) {
-    spaceComplexity = "O(1)";
-} else {
-    spaceComplexity = "O(n)";
-}
-
-System.out.println("Estimated Space Complexity: " + spaceComplexity);
-
-if (depth == 0) {
-    System.out.println("Time Complexity Reason: No loops detected, constant time execution.");
-} else if (depth == 1) {
-    System.out.println("Time Complexity Reason: Single loop detected, linear growth with input size.");
-} else {
-    System.out.println(
-        "Time Complexity Reason: " + depth +
-        " nested loops detected. Each inner loop executes fully for every iteration of the outer loop."
-    );
-}
-
-
-if (counter.recursiveMethods.isEmpty()) {
-    System.out.println("Space Complexity Reason: No recursion detected, constant stack space used.");
-} else {
-    System.out.println(
-        "Space Complexity Reason: Recursive method(s) detected " +
-        counter.recursiveMethods +
-        ". Each recursive call adds a stack frame."
-    );
-}
-
+            printLimitations();
 
         } catch (Exception e) {
             System.out.println("Invalid Java code");
         }
+    }
+
+    private static void printReport(MethodReport r) {
+        System.out.println("================================");
+        System.out.println("Method: " + r.name);
+
+        String time = estimateTime(r);
+        String space = r.isRecursive ? "O(n)" : "O(1)";
+
+        System.out.println("Time Complexity: " + time);
+        System.out.println("Space Complexity: " + space);
+
+        if (r.isRecursive) {
+            System.out.println("Reason: Recursive calls detected.");
+        }
+
+        if (!r.loops.isEmpty()) {
+            System.out.println("Loop Growth Types: " + r.loops);
+        }
+
+        System.out.println("================================\n");
+    }
+
+    private static String estimateTime(MethodReport r) {
+        if (r.loops.isEmpty() && !r.isRecursive) return "O(1)";
+        if (r.loops.isEmpty()) return "O(n)";
+
+        StringBuilder sb = new StringBuilder("O(");
+        boolean first = true;
+
+        for (LoopGrowth g : r.loops) {
+            if (!first) sb.append(" * ");
+            first = false;
+
+            switch (g) {
+                case CONSTANT -> sb.append("1");
+                case LINEAR -> sb.append("n");
+                case LOGARITHMIC -> sb.append("log n");
+                default -> sb.append("?");
+            }
+        }
+
+        sb.append(")");
+        return sb.toString();
+    }
+
+    private static void printLimitations() {
+        System.out.println("Analysis Features:");
+        System.out.println("✓ Detects direct and mutual recursion");
+        System.out.println("✓ Analyzes all loop types (for, foreach, while, do-while)");
+        System.out.println("✓ Identifies linear, logarithmic, and constant growth patterns");
+        System.out.println("✓ Provides worst-case complexity estimates");
+        System.out.println("\nNote: Uses static analysis based on code structure");
     }
 }
